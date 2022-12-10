@@ -1,0 +1,75 @@
+server {
+
+	root /var/www/html;
+
+	# Add index.php to the list if you are using PHP
+	index index.html index.htm index.nginx-debian.html;
+
+	server_name video.aincoder.com;
+
+	location / {
+                proxy_pass http://127.0.0.1:3000;
+                proxy_http_version 1.1;
+                proxy_set_header Access-Control-Allow-Origin *;
+
+
+
+                    set $cors "1";
+
+                    # OPTIONS indicates a CORS pre-flight request
+                    if ($request_method = 'OPTIONS') {
+                       set $cors "${cors}o";
+                    }
+
+                    # Append CORS headers to any request from
+                    # allowed CORS domain, except OPTIONS
+                    if ($cors = "1") {
+                       proxy_set_header 'Access-Control-Allow-Origin: $http_origin';
+                       proxy_set_header 'Access-Control-Allow-Credentials: true';
+                    }
+
+                    # OPTIONS (pre-flight) request from allowed
+                    # CORS domain. return response directly
+                    if ($cors = "1o") {
+                       proxy_set_header 'Access-Control-Allow-Origin: $http_origin';
+                       proxy_set_header 'Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE';
+                       proxy_set_header 'Access-Control-Allow-Credentials: true';
+                       proxy_set_header 'Access-Control-Allow-Headers: Origin,Content-Type,Accept';
+                       add_header Content-Length 0;
+                       add_header Content-Type text/plain;
+                       return 204;
+                    }
+
+
+
+
+
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection 'upgrade';
+                proxy_set_header Host $host;
+                proxy_cache_bypass $http_upgrade;
+            }
+
+    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/video.aincoder.com/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/video.aincoder.com/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+server {
+    if ($host = video.aincoder.com) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+	listen 80 default_server;
+	listen [::]:80 default_server;
+
+	server_name video.aincoder.com;
+    return 404; # managed by Certbot
+
+
+}
